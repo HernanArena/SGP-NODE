@@ -1,45 +1,37 @@
-//Express
-const express = require('express');
-var app = express();
-
-// create application/json parser
+//require
+require('./config/config');
+var express = require('express');
+var Sequelize = require('sequelize');
 var bodyParser = require('body-parser');
-var jsonParser = bodyParser.json()
 
-// create application/x-www-form-urlencoded parser
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
+//inicializando variables
+var app = express();
+var jsonParser = bodyParser.json();
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-//Sequelize
-const Sequelize = require('sequelize');
+//Importar rutas
+var appRoutes = require('./Routes/app');
 
-//Peticiones http
-app.get('/',(req,res,next)=>{
-  res.status(200).json({
-    ok: true,
-    message: 'Peticion realizada correctamente'
-  });
+//CORS: compatibilidad entre servidor para peticiones http
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-control-Allow-Methods","POST, GET, PUT, DELETE, OPTIONS")
+  next();
 });
 
 //Escuchando servidor
-app.listen(3000,()=>{
-    console.log(`Escuchando el puerto 3000: \x1b[32m%s\x1b[0m`, 'online');
+app.listen(process.env.PORT,()=>{
+    console.log(`Escuchando el puerto ${process.env.PORT}: \x1b[32m%s\x1b[0m`, 'online');
 });
 
+//Conectando con la base de datos
+const sequelize = new Sequelize(process.env.BASENAME_DB, process.env.USER_DB , process.env.PASS_DB , JSON.parse(process.env.URLDB));
 
-const sequelize = new Sequelize('cwSGDesarrolloSP', 'admindam', '#9ZDPWvaS8us', {
-  host: 'SARDDBB',
-  dialect: 'mssql',
-  port: '1433',
-  dialectOptions: {
-      instanceName: "DESAMED"
-  }
-});
+//Autenticando conexión a la base de datos
+sequelize.authenticate()
+  .then(() => console.log(`Base de datos en el puerto: ${1433} \x1b[36m%s\x1b[0m`,'online'))
+  .catch(err => console.error('Error en la conexión a la base de datos: ', err));
 
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log('Connection has been established successfully.');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+//middleware rutas
+app.use('/',appRoutes);
